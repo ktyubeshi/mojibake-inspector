@@ -1,0 +1,6 @@
+This is a test file with mojibake characters:
+
+1. Normal text
+2. Text with replacement character: �
+3. Multiple replacement characters: ���
+4. Mixed text: Hello � World � ! 
