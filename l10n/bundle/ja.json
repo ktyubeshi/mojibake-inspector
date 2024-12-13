@@ -1,0 +1,7 @@
+{
+  "Find Mojibake Characters": "文字化けを検出",
+  "No active editor": "アクティブなエディタがありません",
+  "Mojibake detected (U+FFFD REPLACEMENT CHARACTER)\nPlease check the file encoding.": "文字化けが検出されました（U+FFFD REPLACEMENT CHARACTER）\nこのファイルのエンコーディングを確認してください。",
+  "No mojibake characters found.": "文字化けは見つかりませんでした。",
+  "{0} mojibake characters found.": "{0}箇所の文字化けが見つかりました。"
+} 

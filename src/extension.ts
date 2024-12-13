@@ -13,13 +13,13 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('extension.findReplacementCharacters', () => {
 		const editor = vscode.window.activeTextEditor;
 		if (!editor) {
-			vscode.window.showInformationMessage('アクティブなエディタがありません');
+			vscode.window.showInformationMessage('No active editor');
 			return;
 		}
 
 		const document = editor.document;
 		const text = document.getText();
-		const replacementChar = '\uFFFD'; // U+FFFD (REPLACEMENT CHARACTER)
+		const replacementChar = '\uFFFD'; // U+FFFD � (REPLACEMENT CHARACTER)
 		const diagnostics: vscode.Diagnostic[] = [];
 
 		// 文字化け文字を検索
@@ -29,12 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
 			const range = new vscode.Range(position, position.translate(0, 1));
 			const diag = new vscode.Diagnostic(
 				range,
-				'文字化けが検出されました（U+FFFD REPLACEMENT CHARACTER）\n' +
-				'このファイルのエンコーディングを確認してください。',
+				'Mojibake detected (U+FFFD REPLACEMENT CHARACTER)\nPlease check the file encoding.',
 				vscode.DiagnosticSeverity.Warning
 			);
 			diag.source = 'Mojibake Inspector';
 			diag.code = 'MOJIBAKE_FFFD';
+			
 			diagnostics.push(diag);
 
 			index = text.indexOf(replacementChar, index + 1);
@@ -45,9 +45,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// 結果を表示
 		if (diagnostics.length === 0) {
-			vscode.window.showInformationMessage('文字化けは見つかりませんでした。');
+			vscode.window.showInformationMessage('No mojibake characters found.');
 		} else {
-			vscode.window.showInformationMessage(`${diagnostics.length}箇所の文字化けが見つかりました。`);
+			vscode.window.showInformationMessage(
+				vscode.l10n.t('{0} mojibake characters found.', diagnostics.length)
+			);
 		}
 	});
 
