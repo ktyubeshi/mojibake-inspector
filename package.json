@@ -2,7 +2,7 @@
   "name": "mojibake-inspector",
   "displayName": "Mojibake Inspector",
   "description": "Detect and highlight mojibake (replacement characters) in text files",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "mojibake-inspector",
   "repository": {
     "type": "git",
