@@ -1,0 +1,27 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+*.cursorrules
