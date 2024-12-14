@@ -1,0 +1,10 @@
+{
+  "extension.noActiveEditor": "No active text editor",
+  "extension.replacementCharacterFound": "Found {0} U+FFFD (replacement character)",
+  "extension.noReplacementCharactersFound": "No U+FFFD found",
+  "extension.replacementCharacterHover": "Detect U+FFFD (replacement character)",
+  "extension.searching": "Searching for replacement characters...",
+  "extension.checking": "Checking {0}...",
+  "extension.workspaceSearchResult": "Found {0} U+FFFD (replacement character) in workspace",
+  "extension.workspaceSearchNoResult": "No U+FFFD found in workspace"
+}

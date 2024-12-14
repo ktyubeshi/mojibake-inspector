@@ -1,0 +1,8 @@
+{
+  "extension.findReplacementCharacters.title": "Find Mojibake Characters",
+  "extension.searchScope.currentFile": "Current File",
+  "extension.searchScope.currentFile.description": "Search in the current file only",
+  "extension.searchScope.workspace": "Workspace",
+  "extension.searchScope.workspace.description": "Search in all files in the workspace",
+  "extension.searchScope.placeholder": "Select search scope"
+} 

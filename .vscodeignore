@@ -8,4 +8,7 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-!l10n/**
+l10n/**
+!dist/**
+!README.md
+!README.ja.md

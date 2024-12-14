@@ -1,0 +1,8 @@
+{
+  "extension.findReplacementCharacters.title": "文字化けを検索",
+  "extension.searchScope.currentFile": "現在のファイル",
+  "extension.searchScope.currentFile.description": "現在のファイルのみを検索",
+  "extension.searchScope.workspace": "ワークスペース",
+  "extension.searchScope.workspace.description": "ワークスペース内の全ファイルを検索",
+  "extension.searchScope.placeholder": "検索範囲を選択"
+} 

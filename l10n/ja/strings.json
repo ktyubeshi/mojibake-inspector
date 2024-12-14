@@ -1,0 +1,10 @@
+{
+  "extension.noActiveEditor": "アクティブなテキストエディタがありません",
+  "extension.replacementCharacterFound": "{0}個のU+FFFD（置換文字）が見つかりました",
+  "extension.noReplacementCharactersFound": "U+FFFFDは見つかりませんでした",
+  "extension.replacementCharacterHover": "U+FFFD（置換文字）を検出",
+  "extension.searching": "置換文字を検索中...",
+  "extension.checking": "{0}をチェック中...",
+  "extension.workspaceSearchResult": "ワークスペース内で{0}個のU+FFFD（置換文字）が見つかりました",
+  "extension.workspaceSearchNoResult": "ワークスペース内でU+FFFFDは見つかりませんでした"
+}
