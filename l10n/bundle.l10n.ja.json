@@ -10,5 +10,7 @@
     "No {0} found": "{0} は見つかりませんでした",
     "Searching for replacement characters...": "置換文字を検索しています...",
     "Checking {0}...": "{0} を確認しています...",
-    "No '{0}' found in workspace": "ワークスペース内に '{0}' は見つかりませんでした"
+    "No '{0}' found in workspace": "ワークスペース内に '{0}' は見つかりませんでした",
+    "Report saved to: {0}": "レポートを保存しました: {0}",
+    "Failed to save report: {0}": "レポートの保存に失敗しました: {0}"
 }

@@ -2,6 +2,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { l10n } from 'vscode';
+import * as fs from 'fs';
 
 // 置換文字のデコレーション設定
 const mojibakeDecoration = vscode.window.createTextEditorDecorationType({
@@ -31,6 +32,54 @@ const DEFAULT_EXCLUDE_PATTERNS = [
 	'**/dist/**',
 	'**/out/**'
 ];
+
+// エラーコード定義
+const ERROR_CODE = 'E001';
+const ERROR_DESCRIPTION = 'U+FFFD (replacement character) detected';
+
+// レポート出力インターフェース
+interface MojibakeReport {
+	errorCode: string;
+	filePath: string;
+	line: number;
+	column: number;
+}
+
+// レポートファイル出力関数
+async function writeReport(reports: MojibakeReport[], reportPath: string) {
+	const header = `# Mojibake Inspector Report
+# Error Codes:
+# ${ERROR_CODE}\t${ERROR_DESCRIPTION}\n`;
+
+	let content = '';
+	if (reports.length === 0) {
+		content = 'No mojibake characters were found.\n';
+	} else {
+		content = 'ErrorCode\tFilePath\tLine\tColumn\n' +
+			reports.map(report => 
+				`${report.errorCode}\t${report.filePath}\t${report.line}\t${report.column}`
+			).join('\n');
+	}
+
+	try {
+		await vscode.workspace.fs.writeFile(
+			vscode.Uri.file(reportPath),
+			Buffer.from(header + content, 'utf8')
+		);
+		vscode.window.showInformationMessage(l10n.t('Report saved to: {0}', reportPath));
+	} catch (error: unknown) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		vscode.window.showErrorMessage(l10n.t('Failed to save report: {0}', errorMessage));
+	}
+}
+
+// 既存のインターフェース定義の近くに追加
+interface MojibakeResult {
+	file: string;
+	line: number;
+	mojibake: string;
+	encoding: string;
+}
 
 export function activate(context: vscode.ExtensionContext) {
 	try {
@@ -156,6 +205,11 @@ async function findReplacementCharactersInWorkspace() {
 	// ワークスペースの設定から除外パターンを取得（設定がない場合はデフォルトを使用）
 	const config = vscode.workspace.getConfiguration('mojibakeInspector');
 	const excludePatterns = config.get<string[]>('excludePatterns', DEFAULT_EXCLUDE_PATTERNS);
+	const reportConfig = {
+		enabled: config.get<boolean>('report.enabled', false),
+		outputPath: config.get<string>('report.outputPath', 'mojibake-report.txt')
+	};
+	const reports: MojibakeReport[] = [];
 	
 	const progress = await vscode.window.withProgress({
 		location: vscode.ProgressLocation.Notification,
@@ -193,6 +247,20 @@ async function findReplacementCharactersInWorkspace() {
 					diagnostic.code = 'mojibake';
 					diagnostics.push(diagnostic);
 					
+					if (reportConfig.enabled) {
+						const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+						const relativePath = workspaceFolder 
+							? path.relative(workspaceFolder.uri.fsPath, document.uri.fsPath)
+							: document.uri.fsPath;
+						
+						reports.push({
+							errorCode: ERROR_CODE,
+							filePath: relativePath,
+							line: startPos.line + 1,
+							column: startPos.character + 1
+						});
+					}
+					
 					totalCount++;
 				}
 
@@ -210,6 +278,15 @@ async function findReplacementCharactersInWorkspace() {
 
 		return totalCount;
 	});
+
+	// レポートファイルの出力
+	if (reportConfig.enabled) {
+		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+		if (workspaceFolder) {
+			const reportPath = path.join(workspaceFolder.uri.fsPath, reportConfig.outputPath);
+			await writeReport(reports, reportPath);
+		}
+	}
 
 	// 結果を表示
 	if (progress > 0) {
