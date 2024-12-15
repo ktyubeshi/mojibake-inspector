@@ -14,10 +14,10 @@ const mojibakeDecoration = vscode.window.createTextEditorDecorationType({
 // Diagnosticsのコレクションを作成
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('mojibake');
 
-// メッセージを定数として定義
+// メッセージを関数として定義
 const MOJIBAKE_CHAR = ''; // U+FFFD
-const DIAGNOSTIC_MESSAGE = `Detect U+FFFD (replacement character)`;
-const HOVER_MESSAGE = DIAGNOSTIC_MESSAGE;
+const getDiagnosticMessage = () => l10n.t('Detect U+FFFD (replacement character)');
+const getHoverMessage = getDiagnosticMessage;
 
 // 除外パターンを定数として定義
 const DEFAULT_EXCLUDE_PATTERNS = [
@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
 		context.subscriptions.push(
 			vscode.window.onDidChangeActiveTextEditor(editor => {
 				if (editor) {
-					findReplacementCharacters(editor);
+					findReplacementCharacters(editor, false);
 				}
 			})
 		);
@@ -52,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.workspace.onDidChangeTextDocument(event => {
 				const editor = vscode.window.activeTextEditor;
 				if (editor && event.document === editor.document) {
-					findReplacementCharacters(editor);
+					findReplacementCharacters(editor, false);
 				}
 			})
 		);
@@ -86,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
 						vscode.window.showInformationMessage(l10n.t('No active text editor'));
 						return;
 					}
-					findReplacementCharacters(editor);
+					findReplacementCharacters(editor, true);
 				} else {
 					await findReplacementCharactersInWorkspace();
 				}
@@ -102,7 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 }
 
-function findReplacementCharacters(editor: vscode.TextEditor) {
+function findReplacementCharacters(editor: vscode.TextEditor, showMessage: boolean = false) {
 	const text = editor.document.getText();
 	const replacementCharRegex = /\uFFFD/g;
 	const decorations: vscode.DecorationOptions[] = [];
@@ -117,15 +117,15 @@ function findReplacementCharacters(editor: vscode.TextEditor) {
 		// デコレーション用
 		const decoration = {
 			range,
-			hoverMessage: l10n.t(HOVER_MESSAGE)
+			hoverMessage: getHoverMessage()
 		};
 		decorations.push(decoration);
 
 		// Diagnostic用
 		const diagnostic = new vscode.Diagnostic(
-			range,
-			l10n.t(DIAGNOSTIC_MESSAGE),
-			vscode.DiagnosticSeverity.Warning
+				range,
+				getDiagnosticMessage(),
+				vscode.DiagnosticSeverity.Warning
 		);
 		diagnostic.code = 'mojibake';
 		diagnostics.push(diagnostic);
@@ -137,16 +137,18 @@ function findReplacementCharacters(editor: vscode.TextEditor) {
 	// Diagnosticsを設定
 	diagnosticCollection.set(editor.document.uri, diagnostics);
 
-	// 結果を表示
-	const count = decorations.length;
-	if (count > 0) {
-		vscode.window.showInformationMessage(
-			vscode.l10n.t('extension.replacementCharacterFound', count)
-		);
-	} else {
-		vscode.window.showInformationMessage(
-			vscode.l10n.t('No {0} found', MOJIBAKE_CHAR)
-		);
+	// メッセージ表示はshowMessageがtrueの場合のみ
+	if (showMessage) {
+		const count = decorations.length;
+		if (count > 0) {
+			vscode.window.showInformationMessage(
+				vscode.l10n.t('extension.replacementCharacterFound', count)
+			);
+		} else {
+			vscode.window.showInformationMessage(
+				vscode.l10n.t('No {0} found', MOJIBAKE_CHAR)
+			);
+		}
 	}
 }
 
@@ -185,11 +187,12 @@ async function findReplacementCharactersInWorkspace() {
 
 					const diagnostic = new vscode.Diagnostic(
 						range,
-						l10n.t(DIAGNOSTIC_MESSAGE),
+						getDiagnosticMessage(),
 						vscode.DiagnosticSeverity.Warning
 					);
 					diagnostic.code = 'mojibake';
 					diagnostics.push(diagnostic);
+					
 					totalCount++;
 				}
 

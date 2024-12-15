@@ -1,10 +1,14 @@
 {
-  "extension.noActiveEditor": "No active text editor",
-  "extension.replacementCharacterFound": "Found {0} U+FFFD (replacement character)",
-  "extension.noReplacementCharactersFound": "No U+FFFD found",
-  "extension.replacementCharacterHover": "Detect U+FFFD (replacement character)",
-  "extension.searching": "Searching for replacement characters...",
-  "extension.checking": "Checking {0}...",
-  "extension.workspaceSearchResult": "Found {0} U+FFFD (replacement character) in workspace",
-  "extension.workspaceSearchNoResult": "No U+FFFD found in workspace"
+    "Detect U+FFFD (replacement character)": "Detect U+FFFD (replacement character)",
+    "Current File": "Current File",
+    "Search in the current file only": "Search in the current file only",
+    "Workspace": "Workspace",
+    "Search in all files in the workspace": "Search in all files in the workspace",
+    "Select search scope": "Select search scope",
+    "No active text editor": "No active text editor",
+    "extension.replacementCharacterFound": "extension.replacementCharacterFound",
+    "No {0} found": "No {0} found",
+    "Searching for replacement characters...": "Searching for replacement characters...",
+    "Checking {0}...": "Checking {0}...",
+    "No '{0}' found in workspace": "No '{0}' found in workspace"
 }
