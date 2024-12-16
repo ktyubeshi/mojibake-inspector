@@ -11,6 +11,7 @@
 		}
 	],
 	"settings": {
-		"typescript.tsc.autoDetect": "off"
+		"typescript.tsc.autoDetect": "off",
+		"powershell.cwd": "mojibake-inspector"
 	}
 }

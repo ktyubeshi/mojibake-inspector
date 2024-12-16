@@ -16,7 +16,7 @@ const mojibakeDecoration = vscode.window.createTextEditorDecorationType({
 const diagnosticCollection = vscode.languages.createDiagnosticCollection('mojibake');
 
 // メッセージを関数として定義
-const MOJIBAKE_CHAR = ''; // U+FFFD
+const MOJIBAKE_CHAR = '�'; // U+FFFD
 const getDiagnosticMessage = () => l10n.t('Detect U+FFFD (replacement character)');
 const getHoverMessage = getDiagnosticMessage;
 
@@ -33,6 +33,16 @@ const DEFAULT_EXCLUDE_PATTERNS = [
 	'**/out/**'
 ];
 
+// デフォルト設定を定義
+const DEFAULT_SETTINGS = {
+	excludePatterns: DEFAULT_EXCLUDE_PATTERNS,
+	showNoResultMessage: false,  // Not foundメッセージの表示制御
+	report: {
+		enabled: false,
+		outputPath: 'mojibake-report.txt'
+	}
+};
+
 // エラーコード定義
 const ERROR_CODE = 'E001';
 const ERROR_DESCRIPTION = 'U+FFFD (replacement character) detected';
@@ -47,13 +57,26 @@ interface MojibakeReport {
 
 // レポートファイル出力関数
 async function writeReport(reports: MojibakeReport[], reportPath: string) {
+	const now = new Date();
+	const dateStr = now.toLocaleString('ja-JP', {
+		timeZone: 'Asia/Tokyo',
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hour12: false
+	});
+
 	const header = `# Mojibake Inspector Report
+# Generated: ${dateStr}
 # Error Codes:
 # ${ERROR_CODE}\t${ERROR_DESCRIPTION}\n`;
 
 	let content = '';
 	if (reports.length === 0) {
-		content = 'No mojibake characters were found.\n';
+			content = 'No mojibake characters were found.\n';
 	} else {
 		content = 'ErrorCode\tFilePath\tLine\tColumn\n' +
 			reports.map(report => 
@@ -86,6 +109,21 @@ export function activate(context: vscode.ExtensionContext) {
 		console.log('Activating Mojibake Inspector extension...');
 		console.log('Extension path:', context.extensionPath);
 		console.log('L10n bundle path:', path.join(context.extensionPath, 'l10n'));
+
+		// 設定変更を監視
+		context.subscriptions.push(
+			vscode.workspace.onDidChangeConfiguration(event => {
+				if (event.affectsConfiguration('mojibakeInspector')) {
+					// 現在のエディタがある場合は再検査
+					const editor = vscode.window.activeTextEditor;
+					if (editor) {
+						findReplacementCharacters(editor, false);
+					}
+					// ワークスペース全体を再検査（レポート生成なし）
+					findReplacementCharactersInWorkspace(false);
+				}
+			})
+		);
 
 		// コディタの変更を監視
 		context.subscriptions.push(
@@ -137,7 +175,8 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					findReplacementCharacters(editor, true);
 				} else {
-					await findReplacementCharactersInWorkspace();
+					// ユーザーによるワークスペース検査時はレポートを生成
+					await findReplacementCharactersInWorkspace(true);
 				}
 			})
 		);
@@ -156,6 +195,8 @@ function findReplacementCharacters(editor: vscode.TextEditor, showMessage: boole
 	const replacementCharRegex = /\uFFFD/g;
 	const decorations: vscode.DecorationOptions[] = [];
 	const diagnostics: vscode.Diagnostic[] = [];
+	const config = vscode.workspace.getConfiguration('mojibakeInspector');
+	const showNoResultMessage = config.get<boolean>('showNoResultMessage', DEFAULT_SETTINGS.showNoResultMessage);
 
 	let match;
 	while ((match = replacementCharRegex.exec(text)) !== null) {
@@ -193,7 +234,7 @@ function findReplacementCharacters(editor: vscode.TextEditor, showMessage: boole
 			vscode.window.showInformationMessage(
 				vscode.l10n.t('extension.replacementCharacterFound', count)
 			);
-		} else {
+		} else if (showNoResultMessage) {
 			vscode.window.showInformationMessage(
 				vscode.l10n.t('No {0} found', MOJIBAKE_CHAR)
 			);
@@ -201,13 +242,17 @@ function findReplacementCharacters(editor: vscode.TextEditor, showMessage: boole
 	}
 }
 
-async function findReplacementCharactersInWorkspace() {
+async function findReplacementCharactersInWorkspace(generateReport: boolean = true) {
 	// ワークスペースの設定から除外パターンを取得（設定がない場合はデフォルトを使用）
 	const config = vscode.workspace.getConfiguration('mojibakeInspector');
-	const excludePatterns = config.get<string[]>('excludePatterns', DEFAULT_EXCLUDE_PATTERNS);
-	const reportConfig = {
-		enabled: config.get<boolean>('report.enabled', false),
-		outputPath: config.get<string>('report.outputPath', 'mojibake-report.txt')
+	const excludePatterns = config.get<string[]>('excludePatterns', DEFAULT_SETTINGS.excludePatterns);
+	const showNoResultMessage = config.get<boolean>('showNoResultMessage', DEFAULT_SETTINGS.showNoResultMessage);
+	const reportConfig = generateReport ? {
+		enabled: config.get<boolean>('report.enabled', DEFAULT_SETTINGS.report.enabled),
+		outputPath: config.get<string>('report.outputPath', DEFAULT_SETTINGS.report.outputPath)
+	} : {
+		enabled: false,
+		outputPath: ''
 	};
 	const reports: MojibakeReport[] = [];
 	
@@ -293,7 +338,7 @@ async function findReplacementCharactersInWorkspace() {
 		vscode.window.showInformationMessage(
 			vscode.l10n.t('extension.replacementCharacterFound', progress)
 		);
-	} else {
+	} else if (showNoResultMessage) {
 		vscode.window.showInformationMessage(
 			vscode.l10n.t('No \'{0}\' found in workspace', MOJIBAKE_CHAR)
 		);

@@ -2,7 +2,7 @@
     "name": "mojibake-inspector",
     "displayName": "Mojibake Inspector",
     "description": "Detect and highlight mojibake (replacement characters) in text files",
-    "version": "0.0.15",
+    "version": "0.0.16",
     "publisher": "mojibake-inspector",
     "repository": {
         "type": "git",
@@ -56,6 +56,11 @@
                     "type": "string",
                     "default": "mojibake-report.txt",
                     "description": "レポートファイルの出力先（ワークスペースルートからの相対パス）"
+                },
+                "mojibakeInspector.showNoResultMessage": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "文字化けが見つからなかった場合にメッセージを表示する"
                 }
             }
         }

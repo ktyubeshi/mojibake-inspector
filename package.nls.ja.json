@@ -4,5 +4,9 @@
   "extension.searchScope.currentFile.description": "現在のファイルのみを検索",
   "extension.searchScope.workspace": "ワークスペース",
   "extension.searchScope.workspace.description": "ワークスペース内の全ファイルを検索",
-  "extension.searchScope.placeholder": "検索範囲を選択"
+  "extension.searchScope.placeholder": "検索範囲を選択",
+  "mojibakeInspector.excludePatterns.description": "ワークスペース全体検索から除外するglobパターンの配列",
+  "mojibakeInspector.report.enabled.description": "文字化け検出結果をレポートファイルに出力する",
+  "mojibakeInspector.report.outputPath.description": "レポートファイルの出力先（ワークスペースルートからの相対パス）",
+  "mojibakeInspector.showNoResultMessage.description": "文字化けが見つからなかった場合にメッセージを表示する"
 } 

@@ -4,5 +4,9 @@
   "extension.searchScope.currentFile.description": "Search in the current file only",
   "extension.searchScope.workspace": "Workspace",
   "extension.searchScope.workspace.description": "Search in all files in the workspace",
-  "extension.searchScope.placeholder": "Select search scope"
+  "extension.searchScope.placeholder": "Select search scope",
+  "mojibakeInspector.excludePatterns.description": "Array of glob patterns to exclude from workspace-wide search",
+  "mojibakeInspector.report.enabled.description": "Output mojibake detection results to a report file",
+  "mojibakeInspector.report.outputPath.description": "Report file output path (relative to workspace root)",
+  "mojibakeInspector.showNoResultMessage.description": "Show a message when no mojibake is found"
 } 
