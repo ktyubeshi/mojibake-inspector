@@ -12,3 +12,13 @@ vsc-extension-quickstart.md
 !dist/**
 !README.md
 !README.ja.md
+
+# 開発用ファイル
+.cursorrules
+.mojibake-report.txt
+.vscode-test.mjs
+eslint.config.mjs
+mojibake-inspector.code-workspace
+test-mojibake.txt
+vsc-extension-quickstart-ja.md
+HowToBuild.md 
