@@ -26,6 +26,25 @@
                 "title": "%extension.findReplacementCharacters.title%"
             }
         ],
+        "viewsContainers": {
+            "panel": [
+                {
+                    "id": "mojibake-explorer",
+                    "title": "文字化け",
+                    "icon": "resources/mojibake.svg"
+                }
+            ]
+        },
+        "views": {
+            "mojibake-explorer": [
+                {
+                    "type": "webview",
+                    "id": "mojibakeView",
+                    "name": "文字化け",
+                    "when": "config.mojibakeInspector.showMojibakeView"
+                }
+            ]
+        },
         "configuration": {
             "title": "Mojibake Inspector",
             "properties": {
@@ -61,6 +80,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "文字化けが見つからなかった場合にメッセージを表示する"
+                },
+                "mojibakeInspector.showMojibakeView": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "文字化けタブを表示する"
                 }
             }
         }

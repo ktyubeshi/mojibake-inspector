@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { l10n } from 'vscode';
 import * as fs from 'fs';
+import { MojibakeWebviewProvider } from './webview/MojibakeWebviewProvider';
 
 // 置換文字のデコレーション設定
 const mojibakeDecoration = vscode.window.createTextEditorDecorationType({
@@ -47,7 +48,7 @@ const DEFAULT_SETTINGS = {
 const ERROR_CODE = 'E001';
 const ERROR_DESCRIPTION = 'U+FFFD (replacement character) detected';
 
-// レポート出力インターフェース
+// レポート出力インター��ェース
 interface MojibakeReport {
 	errorCode: string;
 	filePath: string;
@@ -104,11 +105,168 @@ interface MojibakeResult {
 	encoding: string;
 }
 
+// 文字化けツリービューのアイテムクラス
+class MojibakeTreeItem extends vscode.TreeItem {
+    constructor(
+        public readonly label: string,
+        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+        public readonly command?: vscode.Command
+    ) {
+        super(label, collapsibleState);
+    }
+}
+
+// 文字化けツリービューのデータプロバイダー
+class MojibakeTreeDataProvider implements vscode.TreeDataProvider<MojibakeTreeItem> {
+    private _onDidChangeTreeData: vscode.EventEmitter<MojibakeTreeItem | undefined | null | void> = new vscode.EventEmitter<MojibakeTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<MojibakeTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+
+    private mojibakeItems: Map<string, vscode.Diagnostic[]> = new Map();
+    private treeView?: vscode.TreeView<MojibakeTreeItem>;
+
+    constructor(private context: vscode.ExtensionContext) {}
+
+    setTreeView(treeView: vscode.TreeView<MojibakeTreeItem>) {
+        this.treeView = treeView;
+        this.updateTitle();
+    }
+
+    private updateTitle() {
+        if (this.treeView) {
+            let totalCount = 0;
+            for (const diagnostics of this.mojibakeItems.values()) {
+                totalCount += diagnostics.length;
+            }
+            // パネルのタイトルを更新
+            vscode.commands.executeCommand('setContext', 'mojibakeInspector.count', totalCount);
+            this.treeView.title = totalCount > 0 ? `文字化け (${totalCount})` : '文字化け';
+            this.treeView.badge = {
+                value: totalCount,
+                tooltip: totalCount > 0 ? `${totalCount}個の文字化けが見つかりました` : '文字化けは見つかりませんでした'
+            };
+        }
+    }
+
+    refresh(): void {
+        this._onDidChangeTreeData.fire();
+        this.updateTitle();
+    }
+
+    updateDiagnostics(uri: vscode.Uri, diagnostics: vscode.Diagnostic[]): void {
+        if (diagnostics.length > 0) {
+            this.mojibakeItems.set(uri.fsPath, diagnostics);
+        } else {
+            this.mojibakeItems.delete(uri.fsPath);
+        }
+        this.refresh();
+    }
+
+    clearAll(): void {
+        this.mojibakeItems.clear();
+        this.refresh();
+    }
+
+    getTreeItem(element: MojibakeTreeItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: MojibakeTreeItem): Thenable<MojibakeTreeItem[]> {
+        if (!element) {
+            // ルートレベル：ファイル一覧を表示
+            return Promise.resolve(Array.from(this.mojibakeItems.entries()).map(([filePath, diagnostics]) => {
+                const fileName = path.basename(filePath);
+                const treeItem = new MojibakeTreeItem(
+                    `${fileName} (${diagnostics.length})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                
+                // ファイルアイコンを設定
+                treeItem.resourceUri = vscode.Uri.file(filePath);
+                treeItem.iconPath = vscode.ThemeIcon.File;
+                
+                return treeItem;
+            }));
+        } else {
+            // ファイルの子要素：文字化けの詳細を表示
+            const filePath = Array.from(this.mojibakeItems.keys()).find(key => 
+                element.label.startsWith(path.basename(key)));
+            
+            if (filePath) {
+                const diagnostics = this.mojibakeItems.get(filePath) || [];
+                return Promise.resolve(diagnostics.map(diagnostic => {
+                    const range = diagnostic.range;
+                    const label = `行 ${range.start.line + 1}, 列 ${range.start.character + 1}`;
+                    const treeItem = new MojibakeTreeItem(
+                        label,
+                        vscode.TreeItemCollapsibleState.None,
+                        {
+                            command: 'vscode.open',
+                            title: 'Open File',
+                            arguments: [
+                                vscode.Uri.file(filePath),
+                                { selection: range }
+                            ]
+                        }
+                    );
+                    
+                    // 文字化け位置のアイコンを設定
+                    treeItem.iconPath = new vscode.ThemeIcon('warning');
+                    
+                    return treeItem;
+                }));
+            }
+            return Promise.resolve([]);
+        }
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	try {
 		console.log('Activating Mojibake Inspector extension...');
 		console.log('Extension path:', context.extensionPath);
 		console.log('L10n bundle path:', path.join(context.extensionPath, 'l10n'));
+
+		// WebViewプロバイダーの初期化
+		const mojibakeWebviewProvider = new MojibakeWebviewProvider(context.extensionUri);
+		context.subscriptions.push(
+			vscode.window.registerWebviewViewProvider(
+				MojibakeWebviewProvider.viewType,
+				mojibakeWebviewProvider
+			)
+		);
+		
+		// 既存のDiagnosticsコレクションを更新する際にWebViewも更新
+		const originalSet = diagnosticCollection.set.bind(diagnosticCollection);
+		diagnosticCollection.set = function(
+			uriOrEntries: vscode.Uri | readonly [vscode.Uri, readonly vscode.Diagnostic[] | undefined][],
+			diagnostics?: readonly vscode.Diagnostic[] | undefined
+		): void {
+			if (uriOrEntries instanceof vscode.Uri) {
+				// 単一のURIとDiagnosticsのケース
+				originalSet(uriOrEntries, diagnostics);
+				if (diagnostics) {
+					mojibakeWebviewProvider.updateDiagnostics(uriOrEntries, Array.from(diagnostics));
+				} else {
+					mojibakeWebviewProvider.updateDiagnostics(uriOrEntries, []);
+				}
+			} else {
+				// 複数エントリのケース
+				originalSet(uriOrEntries);
+				for (const [uri, diags] of uriOrEntries) {
+					if (diags) {
+						mojibakeWebviewProvider.updateDiagnostics(uri, Array.from(diags));
+					} else {
+						mojibakeWebviewProvider.updateDiagnostics(uri, []);
+					}
+				}
+			}
+		};
+		
+		const originalClear = diagnosticCollection.clear.bind(diagnosticCollection);
+		diagnosticCollection.clear = function(): void {
+			originalClear();
+			mojibakeWebviewProvider.clearAll();
+		};
 
 		// 設定変更を監視
 		context.subscriptions.push(
@@ -121,6 +279,12 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					// ワークスペース全体を再検査（レポート生成なし）
 					findReplacementCharactersInWorkspace(false);
+				}
+				if (event.affectsConfiguration('mojibakeInspector.showMojibakeView')) {
+					// ビューの表示/非表設定が変更された場合の処理
+					const config = vscode.workspace.getConfiguration('mojibakeInspector');
+					const showView = config.get<boolean>('showMojibakeView', true);
+					vscode.commands.executeCommand('setContext', 'config.mojibakeInspector.showMojibakeView', showView);
 				}
 			})
 		);
@@ -243,7 +407,7 @@ function findReplacementCharacters(editor: vscode.TextEditor, showMessage: boole
 }
 
 async function findReplacementCharactersInWorkspace(generateReport: boolean = true) {
-	// ワークスペースの設定から除外パターンを取得（設定がない場合はデフォルトを使用）
+	// ワークスペースの設定から除外パターンを取得（設定ない場合はデフォルトを使用）
 	const config = vscode.workspace.getConfiguration('mojibakeInspector');
 	const excludePatterns = config.get<string[]>('excludePatterns', DEFAULT_SETTINGS.excludePatterns);
 	const showNoResultMessage = config.get<boolean>('showNoResultMessage', DEFAULT_SETTINGS.showNoResultMessage);

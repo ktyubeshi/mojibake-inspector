@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字化け検出結果</title>
+    <style>
+        :root {
+            --container-padding: 20px;
+            --input-padding-vertical: 6px;
+            --input-padding-horizontal: 4px;
+            --input-margin-vertical: 4px;
+            --input-margin-horizontal: 0;
+        }
+
+        body {
+            padding: 0 var(--container-padding);
+            color: var(--vscode-foreground);
+            font-size: var(--vscode-font-size);
+            font-weight: var(--vscode-font-weight);
+            font-family: var(--vscode-font-family);
+            background-color: var(--vscode-editor-background);
+        }
+
+        .mojibake-list {
+            margin-top: 1rem;
+        }
+
+        .mojibake-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .mojibake-item:hover {
+            background-color: var(--vscode-list-hoverBackground);
+        }
+
+        .file-icon {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+
+        .file-info {
+            flex-grow: 1;
+        }
+
+        .file-path {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .location {
+            color: var(--vscode-descriptionForeground);
+            font-size: 0.9em;
+        }
+
+        .warning-icon {
+            color: var(--vscode-list-warningForeground);
+            margin-right: 8px;
+        }
+
+        .count-badge {
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--vscode-descriptionForeground);
+        }
+    </style>
+</head>
+<body>
+    <div class="mojibake-list" id="mojibakeList">
+        <!-- 文字化け検出結果がここに動的に追加されます -->
+    </div>
+
+    <script>
+        (function() {
+            // VS Code WebView APIの取得
+            const vscode = acquireVsCodeApi();
+            
+            // 文字化け情報の表示を更新
+            function updateMojibakeList(items) {
+                const listElement = document.getElementById('mojibakeList');
+                listElement.innerHTML = '';
+
+                if (items.length === 0) {
+                    listElement.innerHTML = '<div class="no-results">文字化けは見つかりませんでした</div>';
+                    return;
+                }
+
+                // ファイルごとにグループ化
+                const fileGroups = new Map();
+                items.forEach(item => {
+                    if (!fileGroups.has(item.filePath)) {
+                        fileGroups.set(item.filePath, []);
+                    }
+                    fileGroups.get(item.filePath).push(item);
+                });
+
+                // グループごとに表示
+                fileGroups.forEach((diagnostics, filePath) => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'mojibake-item';
+                    itemElement.innerHTML = `
+                        <span class="file-icon">📄</span>
+                        <div class="file-info">
+                            <div class="file-path">${getFileName(filePath)}</div>
+                            <div class="location">${filePath}</div>
+                            <div class="diagnostics">
+                                ${diagnostics.map(d => `
+                                    <div class="diagnostic">
+                                        <span class="warning-icon">⚠️</span>
+                                        行 ${d.line}, 列 ${d.column}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <span class="count-badge">${diagnostics.length}</span>
+                    `;
+
+                    // クリックイベントの追加
+                    itemElement.addEventListener('click', () => {
+                        vscode.postMessage({
+                            command: 'openFile',
+                            filePath: filePath,
+                            line: diagnostics[0].line,
+                            column: diagnostics[0].column
+                        });
+                    });
+
+                    listElement.appendChild(itemElement);
+                });
+            }
+
+            // ファイル名の取得
+            function getFileName(filePath) {
+                return filePath.split(/[\\/]/).pop();
+            }
+
+            // メッセージハンドラーの設定
+            window.addEventListener('message', event => {
+                const message = event.data;
+                switch (message.command) {
+                    case 'updateMojibakeList':
+                        updateMojibakeList(message.items);
+                        break;
+                }
+            });
+
+            // 初期状態を復元
+            const state = vscode.getState();
+            if (state) {
+                updateMojibakeList(state.items || []);
+            }
+        }())
+    </script>
+</body>
+</html> 
