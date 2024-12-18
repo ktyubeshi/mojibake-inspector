@@ -36,7 +36,7 @@ def load_json_file(file_path: str | Path) -> Dict[str, str]:
     Returns:
         読み込んだJSONデータ
     """
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, 'r', encoding='utf-8', newline='\n') as f:
         return json.load(f)
 
 def load_all_source_files(repo_root: Path) -> List[Tuple[str, Dict[str, str]]]:
@@ -91,7 +91,7 @@ def create_pot_file(sources: List[Tuple[str, Dict[str, str]]], output_path: str 
             )
             pot.append(entry)
 
-    pot.save(str(output_path))
+    pot.save(str(output_path), encoding='utf-8')
 
 def create_po_file(
     pot_file: str | Path,

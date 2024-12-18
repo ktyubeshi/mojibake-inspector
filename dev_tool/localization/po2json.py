@@ -50,7 +50,7 @@ def update_json_file(json_path: str | Path, translations: Dict[str, str]) -> Non
         translations: 翻訳データ
     """
     # 既存のJSONを読み込む
-    with open(json_path, 'r', encoding='utf-8') as f:
+    with open(json_path, 'r', encoding='utf-8', newline='\n') as f:
         json_data: Dict[str, str] = json.load(f)
     
     # 翻訳を適用
@@ -58,8 +58,8 @@ def update_json_file(json_path: str | Path, translations: Dict[str, str]) -> Non
         if key in json_data:
             json_data[key] = value
     
-    # 更新したJSONを保存
-    with open(json_path, 'w', encoding='utf-8') as f:
+    # 更新したJSONを保存（LF改行で保存）
+    with open(json_path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=2)
         f.write('\n')  # 最後に改行を追加
 
