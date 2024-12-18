@@ -25,3 +25,5 @@ yarn-error.log*
 # Optional eslint cache
 .eslintcache
 *.cursorrules
+
+.mojibake-report.txt
